@@ -1,0 +1,37 @@
+# KSU Proxy - Transparent Proxy Module
+# SELinux policy rules for TPROXY, routing, and firewall management.
+#
+# These rules allow the module to:
+# - Create and manage TPROXY sockets
+# - Manipulate routing tables and rules (ip rule, ip route)
+# - Execute iptables/nftables for traffic interception
+# - Read /proc/net for interface enumeration
+#
+# On KernelSU, module processes run in init domain by default.
+# The su domain covers manual (adb shell) execution.
+# Some devices use shell domain for module scripts.
+
+# Capabilities required for TPROXY and network management
+allow { init shell su } self:capability { net_admin net_raw };
+
+# TPROXY / transparent socket operations
+allow { init shell su } self:udp_socket { create connect bind getattr setattr };
+allow { init shell su } self:tcp_socket { create connect bind getattr setattr };
+allow { init shell su } self:rawip_socket { create read write bind connect getattr setattr };
+
+# Netlink for ip rule and ip route management
+allow { init shell su } self:netlink_route_socket { create bind connect getattr setattr read write nlmsg_read nlmsg_report sendto recvfrom };
+allow { init shell su } self:netlink_socket { create bind connect getattr setattr read write sendto recvfrom };
+
+# Packet socket for tproxy frame interception
+allow { init shell su } self:packet_socket { create bind connect read write };
+
+# Execute iptables, nft, ip and other system networking tools
+allow { init shell su } system_file:file { execute_no_trans execute read open getattr };
+allow { init shell su } shell_data_file:file { execute_no_trans execute read open getattr };
+allow { init shell su } system_file:lnk_file { read getattr };
+
+# Read /proc/net for network interface enumeration
+allow { init shell su } proc_net:file { read open };
+allow { init shell su } proc_net:dir { read search open };
+allow { init shell su } proc_net:lnk_file { read getattr };

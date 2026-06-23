@@ -1,0 +1,420 @@
+{
+    "packages": [
+        {
+            "package_name": "ai.perplexity.app.android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "ai.perplexity.comet",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "ai.x.grok",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "app.nicegram",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "app.revanced.android.gms",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "app.revanced.android.youtube",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "app.revanced.manager.flutter",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "app.rvx.android.youtube",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "bg.myfin.myfin",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "bin.mt.plus",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "bin.mt.termex",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "by.green.tuber",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.android.chrome",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.android.providers.downloads",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.android.providers.downloads.ui",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.android.shell",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.android.vending",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.apkpure.aegon",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.avuscapital.trading212",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.bigfishgames.cookingcrazegooglef2p",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.binance.dev",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.bitstrips.imoji",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.bybit.app",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.canva.editor",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.chrome.beta",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.cloudflare.onedotonedotonedotone",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.discord",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.duolingo",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.ea.game.nfs14_row",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.facebook.katana",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.fapp.translate.language.translator.fasttranslation",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.gameloft.android.ANMP.GloftA8HM",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.giffgaffmobile.controller",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.github.android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.github.jing332.tts_server_android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.github.jing332.tts_server_android.dev",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.global.ztmslg",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.authenticator2",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.chromecast.app",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.googlevoice",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.photos",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.translate",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.walletnfcrel",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.apps.youtube.kids",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.gm",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.gms",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.googlequicksearchbox",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.gsf",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.inputmethod.latin",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.marvin.talkback",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.printservice.recommendation",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.android.youtube",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.google.ar.core",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.helium.mobile.wireless",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.honanStudio.driveX",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.install.service.store",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.jarvigames.viceonline",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.justgame.jails",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.kooritea.fcmfix",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.mi.globalbrowser",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.microsoft.copilot",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.microsoft.office.officehubrow",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.microsoft.office.outlook",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.microsoft.translator",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.miniclip.eightballpool",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.mojang.minecraftpe",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.netease.eggypartyen",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.nexon.kart",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.okinc.okex.gp",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.omarea.vtools",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.openai.chatgpt",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.paypal.android.p2pmobile",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.pd.vehiclemasters",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.playmini.miniworld",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.playrix.fishdomdd.gplay",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.positron_it.zlib",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.reddit.frontpage",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.roblox.client",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.spotify.music",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.sukisu.ultra",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.talkatone.android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.termux",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.tiltingpoint.spongebob",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.topjohnwu.magisk",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.transferwise.android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.twitter.android",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "com.zhiliaoapp.musically",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "freeplay.crowdrun.com",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "io.github.huskydg.magisk",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "io.legado.app.release",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "li.songe.gkd",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "me.bmax.apatch",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "me.weishu.kernelsu",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "notion.id",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.chromium.webapk.ace4715c8463da517_v2",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.mozilla.firefox",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.telegram.messenger",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.telegram.messenger.web",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.thoughtcrime.securesms",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "org.thunderdog.challegram",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "qt.fceimbhnru.jud",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "Telegram.Speed.Hook",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "vn.innoloop.VOALearningEnglish",
+            "scope": "all_instances"
+        },
+        {
+            "package_name": "water.sort.puzzle.game.color.sorting.free",
+            "scope": "all_instances"
+        }
+    ]
+}

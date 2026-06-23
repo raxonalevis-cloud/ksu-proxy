@@ -1,0 +1,2 @@
+proxies:
+  - { name: placeholder, type: ss, server: 127.0.0.1, port: 1, cipher: aes-128-gcm, password: placeholder }

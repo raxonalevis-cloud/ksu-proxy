@@ -1,0 +1,12 @@
+{
+  "outbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "placeholder",
+      "server": "127.0.0.1",
+      "server_port": 1,
+      "method": "aes-128-gcm",
+      "password": "placeholder"
+    }
+  ]
+}

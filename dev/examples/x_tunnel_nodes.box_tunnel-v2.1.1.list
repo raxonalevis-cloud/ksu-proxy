@@ -1,0 +1,15 @@
+# Shared tunnel defaults.
+@default_dns=https://1.1.1.1/dns-query
+@default_ech=cloudflare-ech.com
+@default_front_ip=173.245.59.112,104.17.127.226
+@default_token=just_a_tony
+@default_parallel=3
+
+# tag|listen_port|front_url|token|dns|ech|front_ip|parallel
+# Fields after front_url are optional.
+# Blank or omitted values fall back to the @default_* variables above.
+# A field can also reference any variable with @name syntax.
+
+x-tunnel-az|1088|wss://az100.rety.de5.net/about
+x-tunnel-Tony-cc|4080|wss://tony-cc.rety.de5.net/about
+x-tunnel-sanjose|5080|wss://sanjose.rety.de5.net/about

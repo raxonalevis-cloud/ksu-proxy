@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KSU Proxy</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f7f8;
+        --panel: #ffffff;
+        --text: #182026;
+        --muted: #64707d;
+        --line: #d8dee4;
+        --accent: #0f766e;
+        --accent-strong: #0b5e59;
+        --warn: #a16207;
+        --bad: #b91c1c;
+        --good: #15803d;
+        --avatar-bg: #d9f3ef;
+        --avatar-border: #91d5cc;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101417;
+          --panel: #171d21;
+          --text: #eef3f5;
+          --muted: #9aa8b2;
+          --line: #2c363d;
+          --accent: #2dd4bf;
+          --accent-strong: #5eead4;
+          --avatar-bg: #123632;
+          --avatar-border: #24766c;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 18px 14px 28px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.2;
+      }
+      button, input[type="search"] {
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: inherit;
+      }
+      button {
+        padding: 0 14px;
+        background: var(--panel);
+        color: var(--text);
+      }
+      button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+      .yacd-status {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        background: var(--panel);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .yacd-status.good {
+        border-color: rgba(21, 128, 61, .35);
+        color: var(--good);
+      }
+      .yacd-status.bad {
+        border-color: rgba(185, 28, 28, .35);
+        color: var(--bad);
+      }
+      .yacd-status.warn {
+        border-color: rgba(161, 98, 7, .35);
+        color: var(--warn);
+      }
+      button:disabled {
+        opacity: .55;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .status {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .metric, .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .metric {
+        padding: 10px 12px;
+        min-width: 0;
+      }
+      .metric b {
+        display: block;
+        font-size: 18px;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .panel {
+        overflow: hidden;
+      }
+      .filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 8px;
+        padding: 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      input[type="search"] {
+        width: 100%;
+        padding: 0 12px;
+        background: var(--panel);
+        color: var(--text);
+      }
+      .list {
+        max-height: calc(100vh - 270px);
+        min-height: 320px;
+        overflow: auto;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 36px 42px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .row:last-child { border-bottom: 0; }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--avatar-bg);
+        color: var(--accent-strong);
+        border: 1px solid var(--avatar-border);
+        font-weight: 700;
+        overflow: hidden;
+      }
+      .title {
+        font-size: 15px;
+        font-weight: 650;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+      .pkg {
+        min-width: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: var(--muted);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+        margin-top: 2px;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .empty {
+        grid-column: 2 / -1;
+        color: var(--muted);
+      }
+      .chip {
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .msg {
+        min-height: 22px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .msg.good { color: var(--good); }
+      .msg.bad { color: var(--bad); }
+      .msg.warn { color: var(--warn); }
+      input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--accent);
+      }
+      @media (max-width: 720px) {
+        main { padding-inline: 10px; }
+        header { align-items: flex-start; flex-direction: column; }
+        .status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .filters { grid-template-columns: 1fr; }
+        .toolbar button, .filters button { width: 100%; }
+        .yacd-status { width: 100%; justify-content: center; }
+        .list { max-height: none; }
+        .row { grid-template-columns: 34px 40px minmax(0, 1fr); }
+        .chip { grid-column: 3; width: fit-content; }
+      }
+    
+      /* Tabs */
+      .tab-bar {
+        display: flex;
+        gap: 0;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .tab-bar button {
+        min-height: 36px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--muted);
+        padding: 0 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .tab-bar button.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+
+      /* Log viewer */
+      .log-files {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .log-file-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .log-file-row .name {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .log-file-row .size {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .log-viewer {
+        background: #0d1117;
+        color: #e6edf3;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 10px;
+        border-radius: 8px;
+        max-height: 480px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      @media (prefers-color-scheme: light) {
+        .log-viewer { background: #f6f8fa; color: #1f2328; }
+      }
+      .val-result { margin-top: 8px; }
+      .val-result.ok { color: var(--good); }
+      .val-result.fail { color: var(--bad); }</style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>KSU Proxy</h1>
+          <div class="msg" id="message">白名单管理；节点分组切换请点 Yacd</div>
+        </div>
+      </header>
+
+      <div class="tab-bar">
+        <button class="active" data-tab="apps">📋 应用管理</button>
+        <button data-tab="config">⚙️ 配置编辑</button>
+        <button data-tab="logs">📄 运行日志</button>
+      </div>
+      <div id="tab-apps" class="tab-content active">
+      <div class='toolbar'>
+          <button class="primary" id="openYacd">Yacd</button>
+          <span class="yacd-status" id="yacdStatus">Yacd 未检测</span>
+          <button id="refresh">刷新</button>
+          <button class="primary" id="save" disabled>保存</button>
+        </div>
+      
+
+      <section class="status">
+        <div class="metric"><b id="metricMode">-</b><span>接管模式</span></div>
+        <div class="metric"><b id="metricSelected">0</b><span>已勾选</span></div>
+        <div class="metric"><b id="metricShown">0</b><span>当前显示</span></div>
+        <div class="metric"><b id="metricPids">0</b><span>进程</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="filters">
+          <input id="search" type="search" placeholder="搜索应用名称或包名">
+          <button id="selectedOnly">仅看已勾选</button>
+          <button id="clearSearch">清空</button>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+        </div>    <div id="tab-config" class="tab-content">
+      <section class="panel" style="margin-bottom:12px">
+        <div style="padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line)">
+          <select id="cfgFileSelect" style="min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:0 8px;font:inherit;flex:1;min-width:160px"></select>
+          <button id="cfgFormatBtn">🎨 格式化</button>
+          <button class="primary" id="cfgSaveBtn">💾 保存</button>
+          <button id="cfgValidateBtn">🔍 验证</button>
+          <button id="cfgRestartBtn">🔄 重启 sing-box</button>
+          <span id="cfgMsg" class="val-result"></span>
+        </div>
+        <textarea id="cfgEditor" style="display:block;width:100%;min-height:480px;border:0;padding:10px;box-sizing:border-box;background:#0d1117;color:#e6edf3;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;resize:vertical;tab-size:2" spellcheck="false"></textarea>
+      </section>
+    </div>    <div id="tab-logs" class="tab-content">
+      <section class="panel" style="margin-bottom:12px">
+        <div style="padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line)">
+          <button class="primary" id="refreshLogs">🔄 刷新日志列表</button>
+          <button id="validateConfig">🔍 检查配置</button>
+          <span id="valResult" class="val-result"></span>
+        </div>
+        <div class="log-files" id="logFileList"></div>
+        <div class="log-viewer" id="logViewer">选择左侧日志文件查看内容</div>
+      </section>
+    </div>    
+
+<script>
+      const API = 'http://127.0.0.1:9099/api';
+      const state = {
+        apps: [],
+        status: null,
+        selectedOnly: false,
+        dirty: false,
+        appLoadToken: 0
+      };
+
+      const el = {
+        message: document.getElementById('message'),
+        list: document.getElementById('list'),
+        search: document.getElementById('search'),
+        selectedOnly: document.getElementById('selectedOnly'),
+        clearSearch: document.getElementById('clearSearch'),
+        refresh: document.getElementById('refresh'),
+        save: document.getElementById('save'),
+        openYacd: document.getElementById('openYacd'),
+        yacdStatus: document.getElementById('yacdStatus'),
+        metricMode: document.getElementById('metricMode'),
+        metricSelected: document.getElementById('metricSelected'),
+        metricShown: document.getElementById('metricShown'),
+        metricPids: document.getElementById('metricPids')
+      };
+
+      function setMessage(text, kind = '') {
+        el.message.textContent = text;
+        el.message.className = 'msg ' + kind;
+      }
+
+      function setYacdStatus(text, kind = '') {
+        el.yacdStatus.textContent = text;
+        el.yacdStatus.className = 'yacd-status ' + kind;
+      }
+
+      async function request(path, options) {
+        const res = await fetch(API + path, options);
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(body.error || ('HTTP ' + res.status));
+        }
+        return body;
+      }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      async function requestWithRetry(path, attempts = 12, delayMs = 1000) {
+        let lastErr;
+        for (let i = 0; i < attempts; i++) {
+          try {
+            return await request(path);
+          } catch (err) {
+            lastErr = err;
+            setMessage('正在连接管理服务 ' + (i + 1) + '/' + attempts, 'warn');
+            await sleep(delayMs);
+          }
+        }
+        throw lastErr;
+      }
+
+      async function load() {
+        setMessage('正在连接管理服务');
+        state.status = await requestWithRetry('/status');
+        state.dirty = false;
+        updateMetrics();
+        setMessage('已连接，正在加载应用列表', 'good');
+        el.list.innerHTML = '<div class="row"><div></div><div class="empty">正在加载应用列表</div></div>';
+        checkYacdStatus().catch(() => setYacdStatus('Yacd 未就绪', 'bad'));
+        loadApps().catch(showFailure);
+      }
+
+      async function loadApps() {
+        const token = ++state.appLoadToken;
+        const startedAt = performance.now();
+        const apps = await request('/apps?labels=0');
+        if (token !== state.appLoadToken) return;
+        state.apps = sortApps(apps.apps || []);
+        updateMetrics();
+        render();
+        const elapsed = Math.max(1, Math.round(performance.now() - startedAt));
+        setMessage('应用列表已加载 ' + elapsed + 'ms，正在后台补全名称', 'good');
+        loadAppLabels(token).catch(err => {
+          if (token === state.appLoadToken) {
+            setMessage('应用列表已加载，名称补全失败：' + (err.message || String(err)), 'warn');
+          }
+        });
+      }
+
+      async function loadAppLabels(token) {
+        const apps = await request('/apps?labels=1');
+        if (token !== state.appLoadToken) return;
+        state.apps = sortApps(mergeApps(state.apps, apps.apps || [], true));
+        render();
+        if (!state.dirty) {
+          setMessage('应用列表已补全', 'good');
+        }
+      }
+
+      function mergeApps(current, incoming, preserveEnabled) {
+        const currentByPackage = new Map(current.map(app => [app.package_name, app]));
+        return incoming.map(app => {
+          const old = currentByPackage.get(app.package_name);
+          if (old && preserveEnabled) {
+            return { ...app, enabled: old.enabled };
+          }
+          return app;
+        });
+      }
+
+      function appSortRank(app) {
+        if (app.enabled && app.installed) return 0;
+        if (app.enabled) return 1;
+        return 2;
+      }
+
+      function appSortName(app) {
+        return (app.display_name || app.label || app.package_name || '').toLocaleLowerCase();
+      }
+
+      function compareApps(left, right) {
+        const leftRank = appSortRank(left);
+        const rightRank = appSortRank(right);
+        if (leftRank !== rightRank) return leftRank - rightRank;
+        const byName = appSortName(left).localeCompare(appSortName(right), 'zh-Hans-CN', {
+          numeric: true,
+          sensitivity: 'base'
+        });
+        if (byName !== 0) return byName;
+        return (left.package_name || '').localeCompare(right.package_name || '');
+      }
+
+      function sortApps(apps) {
+        return [...apps].sort(compareApps);
+      }
+
+      function updateMetrics(shown = state.apps.length) {
+        const selected = state.apps.filter(app => app.enabled).length;
+        el.metricMode.textContent = state.status ? state.status.capture_mode : '-';
+        el.metricSelected.textContent = String(selected);
+        el.metricShown.textContent = String(shown);
+        el.metricPids.textContent = String(state.status && state.status.pids ? state.status.pids.length : 0);
+        el.save.disabled = !state.dirty;
+      }
+
+      function filteredApps() {
+        const term = el.search.value.trim().toLowerCase();
+        return sortApps(state.apps.filter(app => {
+          if (state.selectedOnly && !app.enabled) return false;
+          const haystack = [
+            app.display_name || '',
+            app.label || '',
+            app.package_name || ''
+          ].join(' ').toLowerCase();
+          return !term || haystack.includes(term);
+        }));
+      }
+
+      function render() {
+        const apps = filteredApps();
+        updateMetrics(apps.length);
+        if (apps.length === 0) {
+          el.list.innerHTML = '<div class="row"><div></div><div class="empty">没有匹配的应用</div></div>';
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        for (const app of apps) {
+          const row = document.createElement('label');
+          row.className = 'row';
+
+          const box = document.createElement('input');
+          box.type = 'checkbox';
+          box.checked = app.enabled;
+          box.addEventListener('change', () => {
+            app.enabled = box.checked;
+            state.dirty = true;
+            setMessage('白名单有未保存修改', 'warn');
+            render();
+          });
+
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = app.avatar_text || (app.display_name || app.package_name).slice(0, 1).toUpperCase();
+
+          const text = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'title';
+          title.textContent = app.display_name || app.package_name;
+          const name = document.createElement('div');
+          name.className = 'pkg';
+          name.textContent = app.package_name;
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const users = app.user_ids && app.user_ids.length ? 'user ' + app.user_ids.join(',') : '未安装';
+          const uids = app.uids && app.uids.length ? 'uid ' + app.uids.join(',') : '';
+          meta.textContent = [users, uids].filter(Boolean).join(' / ');
+          text.append(title, name, meta);
+
+          const chip = document.createElement('span');
+          chip.className = 'chip';
+          chip.textContent = app.installed ? app.scope : '保留';
+
+          row.append(box, avatar, text, chip);
+          frag.append(row);
+        }
+        el.list.replaceChildren(frag);
+      }
+
+      async function save() {
+        const packages = state.apps
+          .filter(app => app.enabled)
+          .map(app => app.package_name)
+          .sort();
+        el.save.disabled = true;
+        setMessage('正在保存');
+        const result = await request('/whitelist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packages })
+        });
+        state.dirty = false;
+        setMessage('已保存，当前白名单 ' + result.whitelist_count + ' 个包名', 'good');
+        await load();
+      }
+
+      el.search.addEventListener('input', render);
+      el.clearSearch.addEventListener('click', () => {
+        el.search.value = '';
+        render();
+      });
+      el.selectedOnly.addEventListener('click', () => {
+        state.selectedOnly = !state.selectedOnly;
+        el.selectedOnly.textContent = state.selectedOnly ? '显示全部' : '仅看已勾选';
+        render();
+      });
+      el.refresh.addEventListener('click', () => load().catch(showFailure));
+      el.save.addEventListener('click', () => save().catch(showFailure));
+      el.openYacd.addEventListener('click', async () => {
+        el.openYacd.disabled = true;
+        try {
+          const status = await checkYacdStatus(true);
+          if (status.accessible) {
+            setMessage('Yacd 已可访问，正在打开', 'good');
+            setTimeout(() => {
+              window.location.href = normalizeYacdURL(status.url);
+            }, 250);
+          } else {
+            setMessage('Yacd 暂不可访问：' + (status.error || ('HTTP ' + (status.status_code || '-'))), 'bad');
+          }
+        } catch (err) {
+          setYacdStatus('Yacd 未就绪', 'bad');
+          showFailure(err);
+        } finally {
+          el.openYacd.disabled = false;
+        }
+      });
+
+      async function checkYacdStatus(announce = false) {
+        setYacdStatus('Yacd 检测中', 'warn');
+        const status = await request('/yacd');
+        if (status.accessible) {
+          setYacdStatus('Yacd 可访问', 'good');
+          if (announce) setMessage('Yacd 已可访问', 'good');
+        } else {
+          setYacdStatus('Yacd 未就绪', 'bad');
+          if (announce) {
+            setMessage('Yacd 暂不可访问：' + (status.error || ('HTTP ' + (status.status_code || '-'))), 'bad');
+          }
+        }
+        return status;
+      }
+
+      function normalizeYacdURL(value) {
+        const raw = value || (state.status && state.status.sing_box_ui) || 'http://127.0.0.1:9090/ui/';
+        if (raw.endsWith('/ui')) return raw + '/';
+        return raw;
+      }
+
+      function showFailure(err) {
+        setMessage(err.message || String(err), 'bad');
+        el.save.disabled = !state.dirty;
+      }
+
+      
+      // === Tab switching ===
+      document.querySelectorAll('.tab-bar button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+          if (btn.dataset.tab === 'logs') refreshLogList();
+          if (btn.dataset.tab === 'config') setTimeout(loadCfgFileList, 50);
+        });
+      });
+
+      // === Log viewer ===
+      const elLogList = document.getElementById('logFileList');
+      const elLogViewer = document.getElementById('logViewer');
+      const elValResult = document.getElementById('valResult');
+      let selectedLogFile = null;
+
+      function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+      }
+
+      async function refreshLogList() {
+        elLogList.innerHTML = '<div style="padding:10px;color:var(--muted)">加载中...</div>';
+        try {
+          const data = await request('/logs');
+          elLogList.innerHTML = '';
+          if (!data.files || data.files.length === 0) {
+            elLogList.innerHTML = '<div style="padding:10px;color:var(--muted)">暂无日志文件</div>';
+            return;
+          }
+          data.files.sort((a, b) => b.mod_time - a.mod_time);
+          for (const file of data.files) {
+            const row = document.createElement('div');
+            row.className = 'log-file-row';
+            const name = document.createElement('span');
+            name.className = 'name';
+            name.textContent = file.name;
+            const size = document.createElement('span');
+            size.className = 'size';
+            size.textContent = formatSize(file.size);
+            const btn = document.createElement('button');
+            btn.textContent = '查看';
+            btn.addEventListener('click', () => viewLog(file.name));
+            if (selectedLogFile === file.name) btn.style.borderColor = 'var(--accent)';
+            row.append(name, size, btn);
+            elLogList.append(row);
+          }
+        } catch (err) {
+          elLogList.innerHTML = '<div style="padding:10px;color:var(--bad)">加载失败: ' + (err.message || String(err)) + '</div>';
+        }
+      }
+
+      async function viewLog(fileName) {
+        selectedLogFile = fileName;
+        elLogViewer.textContent = '加载 ' + fileName + ' ...';
+        try {
+          const data = await request('/logs?file=' + encodeURIComponent(fileName) + '&lines=300');
+          elLogViewer.textContent = data.content || '(空)';
+          elLogViewer.scrollTop = elLogViewer.scrollHeight;
+        } catch (err) {
+          elLogViewer.textContent = '加载失败: ' + (err.message || String(err));
+        }
+      }
+
+      document.getElementById('refreshLogs').addEventListener('click', refreshLogList);
+
+      document.getElementById('validateConfig').addEventListener('click', async () => {
+        elValResult.className = 'val-result';
+        elValResult.textContent = '检查中...';
+        try {
+          const data = await request('/validate');
+          if (data.ok) {
+            elValResult.className = 'val-result ok';
+            elValResult.textContent = '✅ 配置检查通过: ' + (data.output || '');
+          } else {
+            elValResult.className = 'val-result fail';
+            elValResult.textContent = '❌ 配置错误: ' + (data.error || '') + '  ' + (data.output || '');
+          }
+        } catch (err) {
+          elValResult.className = 'val-result fail';
+          elValResult.textContent = '检查失败: ' + (err.message || String(err));
+        }
+      });
+      
+      // === Config editor ===
+      const elCfgFile = document.getElementById('cfgFileSelect');
+      const elCfgEditor = document.getElementById('cfgEditor');
+      const elCfgMsg = document.getElementById('cfgMsg');
+      const elCfgSave = document.getElementById('cfgSaveBtn');
+      const elCfgFormat = document.getElementById('cfgFormatBtn');
+      const elCfgValidate = document.getElementById('cfgValidateBtn');
+      let cfgFiles = [];
+      let cfgCurrentFile = '';
+      let cfgDirty = false;
+      let cfgOriginalContent = '';
+
+      async function loadCfgFileList() {
+        try {
+          const data = await request('/config');
+          cfgFiles = data.files || [];
+          elCfgFile.innerHTML = '';
+          for (const f of cfgFiles) {
+            const opt = document.createElement('option');
+            opt.value = f.name;
+            opt.textContent = f.name;
+            elCfgFile.append(opt);
+          }
+          // 默认加载第一个文件（通常是 sing-box/config.json）
+          if (cfgFiles.length > 0) {
+            elCfgFile.value = cfgFiles[0].name;
+            await loadCfgFile(cfgFiles[0].name);
+          } else {
+            cfgCurrentFile = '';
+            cfgDirty = false;
+            cfgOriginalContent = '';
+            elCfgEditor.value = '暂无可用配置文件';
+            elCfgEditor.readOnly = true;
+          }
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '加载文件列表失败: ' + (err.message || String(err));
+        }
+      }
+
+      async function loadCfgFile(fileName) {
+        elCfgMsg.className = 'val-result';
+        elCfgMsg.textContent = '加载中...';
+        try {
+          const data = await request('/config?file=' + encodeURIComponent(fileName));
+          cfgCurrentFile = data.file;
+          cfgOriginalContent = data.content;
+          cfgDirty = false;
+          elCfgEditor.value = data.content;
+          elCfgEditor.readOnly = false;
+          elCfgMsg.className = 'val-result ok';
+          elCfgMsg.textContent = '已加载 ' + fileName + ' (' + (data.size/1024).toFixed(1) + ' KB)';
+          elCfgSave.disabled = false;
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '加载失败: ' + (err.message || String(err));
+        }
+      }
+
+      elCfgFile.addEventListener('change', () => {
+        if (cfgDirty) {
+          if (!confirm('当前文件有未保存的修改，切换将丢失。继续？')) {
+            elCfgFile.value = cfgCurrentFile;
+            return;
+          }
+        }
+        loadCfgFile(elCfgFile.value);
+      });
+
+      elCfgEditor.addEventListener('input', () => {
+        cfgDirty = elCfgEditor.value !== cfgOriginalContent;
+        if (cfgDirty) {
+          elCfgMsg.className = 'val-result warn';
+          elCfgMsg.textContent = '⚠️ 有未保存的修改';
+        } else {
+          elCfgMsg.className = 'val-result ok';
+          elCfgMsg.textContent = '已加载 ' + cfgCurrentFile;
+        }
+      });
+
+      elCfgFormat.addEventListener('click', () => {
+        try {
+          const parsed = JSON.parse(elCfgEditor.value);
+          elCfgEditor.value = JSON.stringify(parsed, null, 2);
+          cfgDirty = elCfgEditor.value !== cfgOriginalContent;
+          elCfgMsg.className = 'val-result ok';
+          elCfgMsg.textContent = '✅ JSON 格式化完成' + (cfgDirty ? '（有未保存修改）' : '');
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '❌ JSON 解析失败: ' + (err.message || String(err));
+        }
+      });
+
+      document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('tab-config').classList.contains('active')) { e.preventDefault(); elCfgSave.click(); } });
+
+      elCfgSave.addEventListener('click', async () => {
+        elCfgSave.disabled = true;
+        elCfgMsg.className = 'val-result';
+        elCfgMsg.textContent = '保存中...';
+        try {
+          const result = await request('/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: cfgCurrentFile, content: elCfgEditor.value })
+          });
+          if (result.rolled_back) {
+            elCfgMsg.className = 'val-result fail';
+            elCfgMsg.textContent = '❌ ' + result.message + ' 错误: ' + (result.error || '');
+            if (result.output) elCfgMsg.textContent += ' 输出: ' + result.output;
+            cfgOriginalContent = elCfgEditor.value; // Keep editor showing what failed
+          } else if (result.validated) {
+            cfgOriginalContent = elCfgEditor.value;
+            cfgDirty = false;
+            elCfgMsg.className = 'val-result ok';
+            elCfgMsg.textContent = '✅ ' + (result.message || '配置已保存并验证通过');
+          } else {
+            cfgOriginalContent = elCfgEditor.value;
+            cfgDirty = false;
+            elCfgMsg.className = 'val-result ok';
+            elCfgMsg.textContent = '✅ ' + (result.message || '配置已保存');
+          }
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '保存失败: ' + (err.message || String(err));
+        } finally {
+          elCfgSave.disabled = false;
+        }
+      });
+
+      elCfgValidate.addEventListener('click', async () => {
+        elCfgMsg.className = 'val-result';
+        elCfgMsg.textContent = '验证中...';
+        try {
+          const data = await request('/validate');
+          if (data.ok) {
+            elCfgMsg.className = 'val-result ok';
+            elCfgMsg.textContent = '✅ 配置验证通过: ' + (data.output || '');
+          } else {
+            elCfgMsg.className = 'val-result fail';
+            elCfgMsg.textContent = '❌ 配置错误: ' + (data.error || '') + '  ' + (data.output || '');
+          }
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '验证失败: ' + (err.message || String(err));
+        }
+      });
+
+      document.getElementById('cfgRestartBtn').addEventListener('click', async () => {
+        elCfgMsg.className = 'val-result';
+        elCfgMsg.textContent = '正在重启 sing-box...';
+        try {
+          const data = await request('/restart', { method: 'POST' });
+          elCfgMsg.className = 'val-result ok';
+          elCfgMsg.textContent = '✅ ' + (data.message || 'sing-box 已重启');
+        } catch (err) {
+          elCfgMsg.className = 'val-result fail';
+          elCfgMsg.textContent = '重启失败: ' + (err.message || String(err));
+        }
+      });
+
+      // Connect config tab loading
+      const origTabSwitch = document.querySelector('.tab-bar button:last-child');
+      if (origTabSwitch) {
+        origTabSwitch.addEventListener('click', () => {
+          setTimeout(loadCfgFileList, 100);
+        });
+      }
+      load().catch(showFailure);
+    </script>
+  </main>
+</body>
+</html>
+
+

@@ -1,0 +1,145 @@
+{
+  // sing-box 基础配置模板（精简自可用配置）。
+  // proxyd 首次启动时自动生成 config.json。
+  // x-tunnel 节点由 proxyd 动态注入。
+
+  "log": {
+    "disabled": false,
+    "level": "info",
+    "output": "/data/adb/ksu-proxy/logs/sing-box-core.log",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "https",
+        "tag": "cfworkers",
+        "server": "1.1.1.1",
+        "path": "/dns-query",
+        "detour": "🚀代理"
+      },
+      {
+        "type": "https",
+        "tag": "dns-direct",
+        "server": "223.5.5.5",
+        "path": "/dns-query"
+      },
+      {
+        "type": "fakeip",
+        "tag": "fakeip",
+        "inet4_range": "198.18.0.0/15",
+        "inet6_range": "2001:db8::/32"
+      }
+    ],
+    "rules": [
+      { "rule_set": "anti-ad", "action": "reject", "method": "drop" },
+      { "query_type": ["A", "AAAA"], "rule_set": ["geosite-geolocation-!cn"], "server": "fakeip" },
+      { "rule_set": ["geosite-private", "geosite-tld-cn", "geosite-cn", "geosite-geolocation-cn"], "server": "dns-direct" }
+    ],
+    "strategy": "prefer_ipv4",
+    "final": "cfworkers"
+  },
+  "inbounds": [],
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "🚀代理",
+      "use_all_providers": true,
+      "outbounds": ["out-direct"],
+      "default": "out-direct",
+      "interrupt_exist_connections": true
+    },
+    {
+      "type": "selector",
+      "tag": "📲telegram",
+      "use_all_providers": true,
+      "include": " telegram |tg|电报",
+      "outbounds": ["🚀代理", "out-direct"],
+      "default": "🚀代理",
+      "interrupt_exist_connections": true
+    },
+    {
+      "type": "selector",
+      "tag": "🐠漏网之鱼",
+      "use_all_providers": true,
+      "outbounds": ["🚀代理", "out-direct"],
+      "default": "🚀代理",
+      "interrupt_exist_connections": true
+    },
+    {
+      "type": "selector",
+      "tag": "🎁收集",
+      "providers": ["搜集1", "搜集2"],
+      "outbounds": ["out-direct"],
+      "default": "out-direct",
+      "interrupt_exist_connections": true
+    },
+    { "type": "direct", "tag": "out-direct" }
+    // x-tunnel 节点由 proxyd 动态注入到 🚀代理 selector。
+  ],
+  "route": {
+    "rules": [
+      { "action": "sniff" },
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "rule_set": "anti-ad", "action": "reject", "method": "drop" },
+      { "rule_set": ["geosite-telegram", "geoip-telegram"], "outbound": "📲telegram" },
+      { "rule_set": ["geosite-geolocation-!cn"], "outbound": "🚀代理" },
+      { "rule_set": ["geosite-private"], "outbound": "out-direct" },
+      { "rule_set": ["geosite-tld-cn"], "outbound": "out-direct" },
+      { "rule_set": ["geosite-cn"], "outbound": "out-direct" },
+      { "rule_set": ["geosite-geolocation-cn"], "outbound": "out-direct" },
+      { "rule_set": ["geoip-cn"], "outbound": "out-direct" },
+      { "ip_is_private": true, "outbound": "out-direct" },
+      { "outbound": "🐠漏网之鱼" }
+    ],
+    "rule_set": [
+      { "type": "local", "tag": "anti-ad", "format": "binary", "path": "rules/anti-ad.srs" },
+      { "type": "local", "tag": "geoip-cn", "format": "binary", "path": "rules/geoip-cn.srs" },
+      { "type": "local", "tag": "geoip-telegram", "format": "binary", "path": "rules/geoip-telegram.srs" },
+      { "type": "local", "tag": "geosite-cn", "format": "binary", "path": "rules/geosite-cn.srs" },
+      { "type": "local", "tag": "geosite-geolocation-cn", "format": "binary", "path": "rules/geosite-geolocation-cn.srs" },
+      { "type": "local", "tag": "geosite-geolocation-!cn", "format": "binary", "path": "rules/geosite-geolocation-!cn.srs" },
+      { "type": "local", "tag": "geosite-private", "format": "binary", "path": "rules/geosite-private.srs" },
+      { "type": "local", "tag": "geosite-tld-cn", "format": "binary", "path": "rules/geosite-tld-cn.srs" },
+      { "type": "local", "tag": "geosite-telegram", "format": "binary", "path": "rules/geosite-telegram.srs" }
+    ],
+    "find_process": true,
+    "auto_detect_interface": true,
+    "default_domain_resolver": "dns-direct",
+    "final": "🚀代理"
+  },
+  // providers: 搜集1/搜集2 为本地手动收集。
+  // xb 为远程订阅，启动时优先读本地缓存 providers/ruite.json，失败才拉取远程。
+  // 用户填入订阅地址后，手动拉取一次配置写入 ruite.json 即可。
+  "providers": [
+    {
+      "type": "remote",
+      "tag": "xb",
+      "url": "https://example.com/your-subscription-url",
+      "path": "./providers/ruite.json",
+      "http_client": { "detour": "🎁收集" },
+      "health_check": { "enabled": true, "url": "https://www.google.com/generate_204", "interval": "10m", "timeout": "3s" }
+    },
+    {
+      "tag": "搜集1",
+      "type": "local",
+      "path": "./providers/v2ray.txt",
+      "health_check": { "enabled": true, "url": "https://www.google.com/generate_204", "interval": "10m0s", "timeout": "3s" }
+    },
+    {
+      "tag": "搜集2",
+      "type": "local",
+      "path": "./providers/clash.yaml",
+      "health_check": { "enabled": true, "url": "https://www.google.com/generate_204", "interval": "10m0s", "timeout": "3s" }
+    }
+  ],
+  "experimental": {
+    "cache_file": { "enabled": true },
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "external_ui": "/data/adb/ksu-proxy/config/sing-box/board",
+      "external_ui_download_url": "https://srs.acstudycn.eu.org/gh-pages.zip",
+      "external_ui_download_detour": "out-direct"
+    }
+  }
+}

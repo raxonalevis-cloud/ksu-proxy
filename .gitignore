@@ -1,0 +1,25 @@
+# Build artifacts
+dist/
+*.exe
+
+# Binaries (built by CI, not committed)
+KsuProxy/bin/arm64-v8a/proxyd
+KsuProxy/bin/arm64-v8a/proxyctl
+KsuProxy/bin/arm64-v8a/sing-box
+KsuProxy/bin/arm64-v8a/x-tunnel
+
+# Runtime
+runtime/
+*.log
+*.pid
+
+# Backup files
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dev tools (local only)
+dev/test/
+dev/__pycache__/
