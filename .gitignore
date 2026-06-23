@@ -27,3 +27,4 @@ Thumbs.db
 dev/test/
 dev/__pycache__/
 push.sh
+release.sh
