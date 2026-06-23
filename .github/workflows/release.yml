@@ -22,6 +22,18 @@ jobs:
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyd ./cmd/proxyd
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyctl ./cmd/proxyctl
 
+      - name: Download sing-box
+        run: |
+          curl -sL "https://github.com/SagerNet/sing-box/releases/download/v1.13.13/sing-box-1.13.13-linux-arm64.tar.gz" -o /tmp/sing-box.tar.gz
+          tar xzf /tmp/sing-box.tar.gz -C /tmp/
+          cp /tmp/sing-box-*/sing-box KsuProxy/bin/arm64-v8a/sing-box
+          chmod +x KsuProxy/bin/arm64-v8a/sing-box
+
+      - name: Download x-tunnel
+        run: |
+          curl -sL "https://github.com/peasoft/NoMoreWalls/releases/download/latest/box_tunnel-linux-arm64" -o KsuProxy/bin/arm64-v8a/x-tunnel
+          chmod +x KsuProxy/bin/arm64-v8a/x-tunnel
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
