@@ -16,18 +16,23 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Sync and build sing-box
+        uses: actions/checkout@v4
+        with:
+          repository: raxonalevis-cloud/sing-box
+          ref: reF1nd-stable
+          path: sing-box-src
+
+      - name: Build sing-box binary
+        run: |
+          cd sing-box-src
+          go build -trimpath -ldflags "-s -w" -o ../KsuProxy/bin/arm64-v8a/sing-box ./cmd/sing-box
+
       - name: Build proxyd
         run: |
           cd dev/src
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyd ./cmd/proxyd
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyctl ./cmd/proxyctl
-
-      - name: Download sing-box
-        run: |
-          curl -sL "https://github.com/SagerNet/sing-box/releases/download/v1.13.13/sing-box-1.13.13-linux-arm64.tar.gz" -o /tmp/sing-box.tar.gz
-          tar xzf /tmp/sing-box.tar.gz -C /tmp/
-          cp /tmp/sing-box-*/sing-box KsuProxy/bin/arm64-v8a/sing-box
-          chmod +x KsuProxy/bin/arm64-v8a/sing-box
 
       - name: Download x-tunnel
         run: |
