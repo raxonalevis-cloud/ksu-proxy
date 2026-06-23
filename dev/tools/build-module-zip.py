@@ -31,8 +31,6 @@ REQUIRED_ENTRIES = (
     "webroot/index.html",
     "KsuProxy/scripts/ksu-proxy.sh",
     "KsuProxy/config/whitelist/packages.json",
-    "KsuProxy/bin/arm64-v8a/sing-box",
-    "KsuProxy/bin/arm64-v8a/x-tunnel",
 )
 
 

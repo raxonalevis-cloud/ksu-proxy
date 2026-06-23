@@ -103,6 +103,10 @@ generate_default_config() {
     "enabled": true,
     "repo": "raxonalevis-cloud/ksu-proxy",
     "check_interval_hours": 24
+  },
+  "binaries": {
+    "sing_box_url": "https://dsm.210313.xyz:4443/sharing/wGUXx2l1e",
+    "x_tunnel_url": "https://dsm.210313.xyz:4443/sharing/fawIHVa0W"
   }
 }
     "start_grace_millis": 500,
