@@ -26,3 +26,4 @@ Thumbs.db
 # Dev tools (local only)
 dev/test/
 dev/__pycache__/
+push.sh
