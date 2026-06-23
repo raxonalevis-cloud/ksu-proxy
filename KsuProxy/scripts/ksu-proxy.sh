@@ -19,35 +19,6 @@ export PATH="/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:/system/bin:/sy
 # Create directories early so logging works even if ensure_data() fails
 mkdir -p "${CONFIG_DIR}" "${RUN_DIR}" "${LOG_DIR}" "${DATA_DIR}/runtime" "${BACKUP_DIR}"
 
-BIN_DIR="${MODDIR}/bin/arm64-v8a"
-SING_BOX_URL="https://dsm.210313.xyz:4443/sharing/wGUXx2l1e"
-X_TUNNEL_URL="https://dsm.210313.xyz:4443/sharing/fawIHVa0W"
-
-ensure_binaries() {
-  if [ ! -f "${BIN_DIR}/sing-box" ]; then
-    echo "Downloading sing-box..." >>"${LOG_DIR}/service.log"
-    curl -sL --connect-timeout 10 --max-time 120 "${SING_BOX_URL}" -o "${BIN_DIR}/sing-box" 2>>"${LOG_DIR}/service.log"
-    if [ -f "${BIN_DIR}/sing-box" ] && [ -s "${BIN_DIR}/sing-box" ]; then
-      chmod +x "${BIN_DIR}/sing-box"
-      echo "sing-box downloaded OK" >>"${LOG_DIR}/service.log"
-    else
-      echo "sing-box download FAILED" >>"${LOG_DIR}/service.log"
-      rm -f "${BIN_DIR}/sing-box"
-    fi
-  fi
-  if [ ! -f "${BIN_DIR}/x-tunnel" ]; then
-    echo "Downloading x-tunnel..." >>"${LOG_DIR}/service.log"
-    curl -sL --connect-timeout 10 --max-time 60 "${X_TUNNEL_URL}" -o "${BIN_DIR}/x-tunnel" 2>>"${LOG_DIR}/service.log"
-    if [ -f "${BIN_DIR}/x-tunnel" ] && [ -s "${BIN_DIR}/x-tunnel" ]; then
-      chmod +x "${BIN_DIR}/x-tunnel"
-      echo "x-tunnel downloaded OK" >>"${LOG_DIR}/service.log"
-    else
-      echo "x-tunnel download FAILED" >>"${LOG_DIR}/service.log"
-      rm -f "${BIN_DIR}/x-tunnel"
-    fi
-  fi
-}
-
 module_config_version() {
   if [ -f "${MODULE_CONFIG_VERSION_FILE}" ]; then
     cat "${MODULE_CONFIG_VERSION_FILE}" 2>/dev/null
@@ -508,10 +479,6 @@ ensure_data() {
     "enabled": true,
     "repo": "raxonalevis-cloud/ksu-proxy",
     "check_interval_hours": 24
-  },
-  "binaries": {
-    "sing_box_url": "https://dsm.210313.xyz:4443/sharing/wGUXx2l1e",
-    "x_tunnel_url": "https://dsm.210313.xyz:4443/sharing/fawIHVa0W"
   }
 }
 DEFAULTCONF_EOF
@@ -599,7 +566,6 @@ write_start_failure_report() {
 }
 
 start_run() {
-  ensure_binaries
   ensure_data
   # 启动前清理可能残留的防火墙规则，避免冲突
   cleanup_firewall_and_routes

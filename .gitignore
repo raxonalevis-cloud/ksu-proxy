@@ -2,9 +2,11 @@
 dist/
 *.exe
 
-# Binaries (downloaded at runtime, not committed)
-KsuProxy/bin/arm64-v8a/sing-box
-KsuProxy/bin/arm64-v8a/x-tunnel
+# Binaries (committed to repo)
+# KsuProxy/bin/arm64-v8a/proxyd
+# KsuProxy/bin/arm64-v8a/proxyctl
+# KsuProxy/bin/arm64-v8a/sing-box
+# KsuProxy/bin/arm64-v8a/x-tunnel
 
 # Staging sources (external, not committed)
 /sing-box
