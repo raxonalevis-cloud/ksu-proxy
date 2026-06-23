@@ -38,17 +38,17 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Package module
-        run: python3 dev/tools/build-module-zip.py . dist/ksu-proxy.zip
-
       - name: Get version from tag
         id: version
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Package module
+        run: python3 dev/tools/build-module-zip.py . dist/ksu-proxy-${{ steps.version.outputs.tag }}.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.version.outputs.tag }}
           tag_name: ${{ steps.version.outputs.tag }}
-          files: dist/ksu-proxy.zip
+          files: dist/ksu-proxy-${{ steps.version.outputs.tag }}.zip
           generate_release_notes: true
