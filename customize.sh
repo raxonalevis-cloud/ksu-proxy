@@ -109,11 +109,6 @@ generate_default_config() {
     "x_tunnel_url": "https://dsm.210313.xyz:4443/sharing/fawIHVa0W"
   }
 }
-    "start_grace_millis": 500,
-    "admin_api_listen": "127.0.0.1:9099",
-    "module_dir": "/data/adb/modules/ksu-proxy"
-  }
-}
 DEFAULTCONF_EOF
 }
 
