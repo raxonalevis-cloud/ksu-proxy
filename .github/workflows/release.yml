@@ -12,40 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync fork with upstream
-        run: |
-          curl -s -X PUT \
-            -H "Authorization: token ${{ secrets.SYNC_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/raxonalevis-cloud/sing-box/merge-upstream" \
-            -d '{"branch":"reF1nd-stable"}'
-
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-
-      - name: Checkout sing-box
-        uses: actions/checkout@v4
-        with:
-          repository: raxonalevis-cloud/sing-box
-          ref: reF1nd-stable
-          path: sing-box-src
-
-      - name: Build sing-box binary
-        run: |
-          cd sing-box-src
-          go build -trimpath -ldflags "-s -w" -o ../KsuProxy/bin/arm64-v8a/sing-box ./cmd/sing-box
 
       - name: Build proxyd
         run: |
           cd dev/src
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyd ./cmd/proxyd
           GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o ../../KsuProxy/bin/arm64-v8a/proxyctl ./cmd/proxyctl
-
-      - name: Download x-tunnel
-        run: |
-          curl -sL "https://github.com/peasoft/NoMoreWalls/releases/download/latest/box_tunnel-linux-arm64" -o KsuProxy/bin/arm64-v8a/x-tunnel
-          chmod +x KsuProxy/bin/arm64-v8a/x-tunnel
 
       - uses: actions/setup-python@v5
         with:

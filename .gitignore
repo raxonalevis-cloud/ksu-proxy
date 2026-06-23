@@ -2,14 +2,12 @@
 dist/
 *.exe
 
-# Binaries (built by CI, not committed)
-KsuProxy/bin/arm64-v8a/proxyd
-KsuProxy/bin/arm64-v8a/proxyctl
-KsuProxy/bin/arm64-v8a/sing-box
-KsuProxy/bin/arm64-v8a/x-tunnel
+# Binaries built by CI (not committed)
+# KsuProxy/bin/arm64-v8a/proxyd
+# KsuProxy/bin/arm64-v8a/proxyctl
 
-# Staging sources (external binaries, not committed)
-sing-box
+# Staging sources (external, not committed)
+/sing-box
 
 # Runtime
 runtime/
