@@ -223,20 +223,68 @@ func reconcile(ctx context.Context, cfg config.Config, logger *log.Logger) error
 		return err
 	}
 	resolver := appresolver.New(cfg.Whitelist.CloneUserIDs)
-	instances, err := resolver.ResolveWhitelist(ctx, wl.EnabledPackages())
-	if err != nil {
-		logger.Printf("app resolver warning: %v", err)
+
+	var uids []int
+	whitelistMode := strings.ToLower(strings.TrimSpace(cfg.Whitelist.Mode))
+
+	switch whitelistMode {
+	case "blacklist":
+		// 黑名单模式：所有 UID 走代理，除了黑名单中的
+		blacklistInstances, err := resolver.ResolveWhitelist(ctx, wl.EnabledPackages())
+		if err != nil {
+			logger.Printf("app resolver warning: %v", err)
+		}
+		blacklistUIDs := appresolver.UIDs(blacklistInstances)
+
+		// 获取所有已安装应用
+		allInstances, err := resolver.ListInstalled(ctx)
+		if err != nil {
+			logger.Printf("list installed apps warning: %v", err)
+		}
+		allUIDs := appresolver.UIDs(allInstances)
+
+		// 从所有 UID 中移除黑名单 UID
+		blacklistSet := make(map[int]bool)
+		for _, uid := range blacklistUIDs {
+			blacklistSet[uid] = true
+		}
+		for _, uid := range allUIDs {
+			if !blacklistSet[uid] {
+				uids = append(uids, uid)
+			}
+		}
+		if logger != nil {
+			logger.Printf("blacklist mode: total_apps=%d blacklist_uids=%d proxy_uids=%d", len(allUIDs), len(blacklistUIDs), len(uids))
+		}
+
+	case "global":
+		// 全局模式：所有 UID 走代理
+		allInstances, err := resolver.ListInstalled(ctx)
+		if err != nil {
+			logger.Printf("list installed apps warning: %v", err)
+		}
+		uids = appresolver.UIDs(allInstances)
+		if logger != nil {
+			logger.Printf("global mode: proxy_uids=%d", len(uids))
+		}
+
+	default:
+		// 白名单模式（默认）：只有指定的 UID 走代理
+		instances, err := resolver.ResolveWhitelist(ctx, wl.EnabledPackages())
+		if err != nil {
+			logger.Printf("app resolver warning: %v", err)
+		}
+		uids = appresolver.UIDs(instances)
+		if logger != nil {
+			logger.Printf("whitelist mode: packages=%d instances=%d uids=%d", len(wl.EnabledPackages()), len(instances), len(uids))
+		}
 	}
-	uids := appresolver.UIDs(instances)
-	if err := writeResolvedUIDFile(cfg, instances, uids); err != nil && logger != nil {
-		logger.Printf("write whitelist uid file warning: %v", err)
+
+	if err := writeResolvedUIDFile(cfg, nil, uids); err != nil && logger != nil {
+		logger.Printf("write uid file warning: %v", err)
 	}
-	if logger != nil {
-		logger.Printf("whitelist resolved packages=%d instances=%d uids=%d", len(wl.EnabledPackages()), len(instances), len(uids))
-		logResolvedWhitelist(logger, instances, uids)
-	}
-	if len(uids) == 0 && len(wl.EnabledPackages()) > 0 && logger != nil {
-		logger.Printf("warning: whitelist has packages but no UIDs were resolved")
+	if len(uids) == 0 && logger != nil {
+		logger.Printf("warning: no UIDs resolved for proxy")
 	}
 	fw := firewall.Manager{Config: cfg, Logger: logger}
 	switch cfg.Capture.Mode {

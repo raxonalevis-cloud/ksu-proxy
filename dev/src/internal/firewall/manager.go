@@ -92,6 +92,7 @@ func (m Manager) Cleanup(ctx context.Context) error {
 	tproxyChain := prefix + "_TPROXY"
 	hotspotChain := prefix + "_HOTSPOT"
 	quicChain := prefix + "_QUIC"
+	loopbackChain := prefix + "_LOOPBACK"
 	legacyBypassChain := prefix + "_BYPASS"
 	oldUIDs := m.readFirewallUIDs()
 
@@ -109,7 +110,7 @@ func (m Manager) Cleanup(ctx context.Context) error {
 		for _, iface := range m.cleanupHotspotInterfaces() {
 			_ = m.run(ctx, true, ipt, "-t", "mangle", "-D", "PREROUTING", "-i", iface, "-j", hotspotChain)
 		}
-		for _, chain := range []string{localChain, tproxyChain, hotspotChain, legacyBypassChain} {
+		for _, chain := range []string{localChain, tproxyChain, hotspotChain, loopbackChain, legacyBypassChain} {
 			_ = m.run(ctx, true, ipt, "-t", "mangle", "-F", chain)
 			_ = m.run(ctx, true, ipt, "-t", "mangle", "-X", chain)
 		}
@@ -157,6 +158,8 @@ func (m Manager) buildNFTablesScript(appUIDs []int, hotspotIfaces []string) stri
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "table inet %s {\n", table)
+
+	// Output chain: mark app traffic, exclude core UIDs and bypass subnets
 	b.WriteString("  chain output {\n")
 	b.WriteString("    type route hook output priority mangle; policy accept;\n")
 	if len(m.Config.Firewall.CoreUIDs) > 0 {
@@ -173,6 +176,7 @@ func (m Manager) buildNFTablesScript(appUIDs []int, hotspotIfaces []string) stri
 	}
 	b.WriteString("  }\n\n")
 
+	// Prerouting chain: TPROXY for loopback and hotspot
 	b.WriteString("  chain prerouting {\n")
 	b.WriteString("    type filter hook prerouting priority mangle; policy accept;\n")
 	fmt.Fprintf(&b, "    iifname \"lo\" %s tcp dport 0-65535 tproxy to :%s meta mark set %s accept\n", markMatch, port, mark)
@@ -189,6 +193,19 @@ func (m Manager) buildNFTablesScript(appUIDs []int, hotspotIfaces []string) stri
 	}
 	b.WriteString("  }\n")
 
+	// Anti-loop chain: prevent proxy traffic from looping
+	if m.Config.Firewall.BlockLoopback {
+		b.WriteString("\n  chain loopback {\n")
+		b.WriteString("    type filter hook input priority mangle; policy accept;\n")
+		if len(m.Config.Firewall.CoreUIDs) > 0 {
+			fmt.Fprintf(&b, "    meta skuid { %s } return\n", joinInts(m.Config.Firewall.CoreUIDs))
+		}
+		fmt.Fprintf(&b, "    %s tcp dport 0-65535 return\n", markMatch)
+		fmt.Fprintf(&b, "    %s udp dport 0-65535 return\n", markMatch)
+		b.WriteString("  }\n")
+	}
+
+	// QUIC disable chain
 	if m.Config.Firewall.DisableQUIC && len(appUIDs) > 0 {
 		b.WriteString("\n  chain quic {\n")
 		b.WriteString("    type filter hook output priority filter; policy accept;\n")
@@ -205,25 +222,31 @@ func (m Manager) applyIPTables(ctx context.Context, ipt string, ipv6 bool, appUI
 	tproxyChain := prefix + "_TPROXY"
 	hotspotChain := prefix + "_HOTSPOT"
 	quicChain := prefix + "_QUIC"
+	loopbackChain := prefix + "_LOOPBACK"
 	port := strconv.Itoa(m.Config.SingBox.TProxyPort)
 
-	for _, chain := range []string{localChain, tproxyChain, hotspotChain} {
+	for _, chain := range []string{localChain, tproxyChain, hotspotChain, loopbackChain} {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-N", chain); err != nil {
 			return err
 		}
 	}
 
+	// Anti-loop: exclude core process traffic
 	for _, uid := range m.Config.Firewall.CoreUIDs {
 		uidText := strconv.Itoa(uid)
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", localChain, "-m", "owner", "--uid-owner", uidText, "-j", "RETURN"); err != nil {
 			return err
 		}
 	}
+
+	// Anti-loop: exclude bypass subnets
 	for _, subnet := range bypass {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", localChain, "-d", subnet, "-j", "RETURN"); err != nil {
 			return err
 		}
 	}
+
+	// Anti-loop: mark app traffic
 	for _, uid := range appUIDs {
 		uidText := strconv.Itoa(uid)
 		for _, proto := range []string{"tcp", "udp"} {
@@ -233,28 +256,52 @@ func (m Manager) applyIPTables(ctx context.Context, ipt string, ipv6 bool, appUI
 		}
 	}
 
+	// TPROXY chain: bypass subnets
 	for _, subnet := range bypass {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", tproxyChain, "-d", subnet, "-j", "RETURN"); err != nil {
 			return err
 		}
 	}
+
+	// TPROXY chain: redirect to TPROXY port
 	for _, proto := range []string{"tcp", "udp"} {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", tproxyChain, "-p", proto, "-j", "TPROXY", "--on-port", port, "--tproxy-mark", m.Config.Firewall.Mark); err != nil {
 			return err
 		}
 	}
 
+	// HOTSPOT chain: bypass subnets
 	for _, subnet := range bypass {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", hotspotChain, "-d", subnet, "-j", "RETURN"); err != nil {
 			return err
 		}
 	}
+
+	// HOTSPOT chain: redirect to TPROXY port
 	for _, proto := range []string{"tcp", "udp"} {
 		if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", hotspotChain, "-p", proto, "-j", "TPROXY", "--on-port", port, "--tproxy-mark", m.Config.Firewall.Mark); err != nil {
 			return err
 		}
 	}
 
+	// LOOPBACK chain: prevent proxy loop
+	if m.Config.Firewall.BlockLoopback {
+		// Block traffic from proxy processes going back through TPROXY
+		for _, uid := range m.Config.Firewall.CoreUIDs {
+			uidText := strconv.Itoa(uid)
+			if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", loopbackChain, "-m", "owner", "--uid-owner", uidText, "-j", "RETURN"); err != nil {
+				return err
+			}
+		}
+		// Mark loopback traffic from core UIDs to skip TPROXY
+		for _, proto := range []string{"tcp", "udp"} {
+			if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", loopbackChain, "-p", proto, "-m", "mark", "--mark", m.Config.Firewall.Mark, "-j", "RETURN"); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Attach chains
 	if err := m.run(ctx, false, ipt, "-t", "mangle", "-A", "OUTPUT", "-j", localChain); err != nil {
 		return err
 	}
@@ -269,6 +316,7 @@ func (m Manager) applyIPTables(ctx context.Context, ipt string, ipv6 bool, appUI
 		}
 	}
 
+	// QUIC disable
 	if m.Config.Firewall.DisableQUIC {
 		if err := m.run(ctx, false, ipt, "-t", "filter", "-N", quicChain); err != nil {
 			return err

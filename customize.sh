@@ -91,13 +91,17 @@ generate_default_config() {
     "bypass_ipv4": ["0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12", "192.168.0.0/16", "224.0.0.0/3"],
     "bypass_ipv6": ["::/127", "fc00::/7", "fe80::/10", "ff00::/8"],
     "disable_quic": false,
-    "dry_run": false
+    "dry_run": false,
+    "block_loopback": true,
+    "ipv6_mode": "auto",
+    "dns_route": false
   },
   "runtime": {
     "poll_interval_seconds": 2,
     "start_grace_millis": 500,
     "admin_api_listen": "127.0.0.1:9099",
-    "module_dir": "/data/adb/modules/ksu-proxy"
+    "module_dir": "/data/adb/modules/ksu-proxy",
+    "scheduled_restart": true
   },
   "update": {
     "enabled": true,

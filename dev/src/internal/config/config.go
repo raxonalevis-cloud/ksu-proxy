@@ -74,7 +74,7 @@ type XTunnelConfig struct {
 
 type WhitelistConfig struct {
 	File         string `json:"file"`
-	Mode         string `json:"mode"`
+	Mode         string `json:"mode"`  // whitelist, blacklist, global
 	CloneUserIDs []int  `json:"clone_user_ids"`
 }
 
@@ -97,6 +97,9 @@ type FirewallConfig struct {
 	BypassIPv6   []string `json:"bypass_ipv6"`
 	DisableQUIC  bool     `json:"disable_quic"`
 	DryRun       bool     `json:"dry_run"`
+	BlockLoopback bool    `json:"block_loopback"`
+	IPv6Mode     string   `json:"ipv6_mode"`
+	DNSRoute     bool     `json:"dns_route"`
 }
 
 type RuntimeConfig struct {
@@ -104,6 +107,7 @@ type RuntimeConfig struct {
 	StartGraceMillis    int    `json:"start_grace_millis"`
 	AdminAPIListen      string `json:"admin_api_listen"`
 	ModuleDir           string `json:"module_dir"`
+	ScheduledRestart    bool   `json:"scheduled_restart"`
 }
 
 type UpdateConfig struct {

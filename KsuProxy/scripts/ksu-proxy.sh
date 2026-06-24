@@ -467,13 +467,17 @@ ensure_data() {
     "bypass_ipv4": ["0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12", "192.168.0.0/16", "224.0.0.0/3"],
     "bypass_ipv6": ["::/127", "fc00::/7", "fe80::/10", "ff00::/8"],
     "disable_quic": false,
-    "dry_run": false
+    "dry_run": false,
+    "block_loopback": true,
+    "ipv6_mode": "auto",
+    "dns_route": false
   },
   "runtime": {
     "poll_interval_seconds": 2,
     "start_grace_millis": 500,
     "admin_api_listen": "127.0.0.1:9099",
-    "module_dir": "/data/adb/modules/ksu-proxy"
+    "module_dir": "/data/adb/modules/ksu-proxy",
+    "scheduled_restart": true
   },
   "update": {
     "enabled": true,
@@ -518,7 +522,7 @@ cleanup_firewall_and_routes() {
   fi
   if command -v iptables >/dev/null 2>&1; then
     for t in mangle nat filter; do
-      for ch in KSP_LOCAL KSP_TPROXY KSP_HOTSPOT KSP_QUIC KSP_BYPASS; do
+      for ch in KSP_LOCAL KSP_TPROXY KSP_HOTSPOT KSP_QUIC KSP_LOOPBACK KSP_BYPASS; do
         iptables -t "${t}" -F "${ch}" 2>/dev/null || true
         iptables -t "${t}" -X "${ch}" 2>/dev/null || true
       done
@@ -526,7 +530,7 @@ cleanup_firewall_and_routes() {
   fi
   if command -v ip6tables >/dev/null 2>&1; then
     for t in mangle nat filter; do
-      for ch in KSP_LOCAL KSP_TPROXY KSP_HOTSPOT KSP_QUIC KSP_BYPASS; do
+      for ch in KSP_LOCAL KSP_TPROXY KSP_HOTSPOT KSP_QUIC KSP_LOOPBACK KSP_BYPASS; do
         ip6tables -t "${t}" -F "${ch}" 2>/dev/null || true
         ip6tables -t "${t}" -X "${ch}" 2>/dev/null || true
       done
@@ -534,6 +538,102 @@ cleanup_firewall_and_routes() {
   fi
   ip route flush table 2025 2>/dev/null || true
   ip -6 route flush table 2025 2>/dev/null || true
+}
+
+# IPv6 控制函数
+enable_ipv6() {
+  sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.accept_ra=2 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.disable_ipv6=0 2>/dev/null || true
+  sysctl -w net.ipv6.conf.default.disable_ipv6=0 2>/dev/null || true
+}
+
+disable_ipv6() {
+  sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.forwarding=0 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.accept_ra=0 2>/dev/null || true
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1 2>/dev/null || true
+  sysctl -w net.ipv6.conf.default.disable_ipv6=1 2>/dev/null || true
+}
+
+# 根据配置设置 IPv6 模式
+apply_ipv6_mode() {
+  mode="${1:-auto}"
+  case "${mode}" in
+    enable)
+      enable_ipv6
+      ;;
+    disable)
+      disable_ipv6
+      ;;
+    auto|*)
+      # auto 模式：保持当前状态，不做任何操作
+      ;;
+  esac
+}
+
+# 定时重启 sing-box 服务
+scheduled_restart_singbox() {
+  # 获取当前小时和分钟
+  hour=$(date +%H)
+  min=$(date +%M)
+  current_time="${hour}:${min}"
+
+  # 检查是否在计划重启时间
+  if [ "${current_time}" = "01:11" ] || [ "${current_time}" = "13:23" ]; then
+    # 避免重复重启（检查上次重启时间）
+    last_restart_file="${RUN_DIR}/last_scheduled_restart"
+    if [ -f "${last_restart_file}" ]; then
+      last_restart=$(cat "${last_restart_file}" 2>/dev/null)
+      if [ "${last_restart}" = "${current_time}" ]; then
+        return 0
+      fi
+    fi
+
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Scheduled restart at ${current_time}" >>"${LOG_DIR}/service.log"
+
+    # 重启 sing-box 服务
+    if [ -x "${PROXYD}" ]; then
+      "${PROXYD}" -config "${CONFIG_FILE}" stop >>"${LOG_DIR}/service.log" 2>&1 || true
+      sleep 2
+      nohup "${PROXYD}" -config "${CONFIG_FILE}" run >>"${LOG_DIR}/service.log" 2>&1 &
+      echo "$!" >"${RUN_PID}"
+      echo "${current_time}" >"${last_restart_file}"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') sing-box restarted successfully" >>"${LOG_DIR}/service.log"
+    fi
+  fi
+}
+
+# 启动定时重启守护进程
+start_scheduled_restart() {
+  # 检查是否启用定时重启
+  scheduled_enabled="false"
+  if [ -f "${CONFIG_FILE}" ] && command -v python3 >/dev/null 2>&1; then
+    scheduled_enabled=$(python3 -c "import json; c=json.load(open('${CONFIG_FILE}')); print(c.get('runtime',{}).get('scheduled_restart','false'))" 2>/dev/null || echo "false")
+  fi
+
+  if [ "${scheduled_enabled}" = "true" ] || [ "${scheduled_enabled}" = "True" ]; then
+    # 启动后台守护进程，每分钟检查一次
+    (
+      while true; do
+        scheduled_restart_singbox
+        sleep 60
+      done
+    ) >/dev/null 2>&1 &
+    echo $! >"${RUN_DIR}/scheduled-restart.pid"
+  fi
+}
+
+# 停止定时重启守护进程
+stop_scheduled_restart() {
+  if [ -f "${RUN_DIR}/scheduled-restart.pid" ]; then
+    pid=$(cat "${RUN_DIR}/scheduled-restart.pid" 2>/dev/null)
+    if [ -n "${pid}" ] && [ -d "/proc/${pid}" ]; then
+      kill "${pid}" >/dev/null 2>&1 || true
+    fi
+    rm -f "${RUN_DIR}/scheduled-restart.pid"
+  fi
 }
 
 write_start_failure_report() {
@@ -567,6 +667,12 @@ write_start_failure_report() {
 
 start_run() {
   ensure_data
+  # 根据配置设置 IPv6 模式
+  ipv6_mode="auto"
+  if [ -f "${CONFIG_FILE}" ] && command -v python3 >/dev/null 2>&1; then
+    ipv6_mode=$(python3 -c "import json; c=json.load(open('${CONFIG_FILE}')); print(c.get('firewall',{}).get('ipv6_mode','auto'))" 2>/dev/null || echo "auto")
+  fi
+  apply_ipv6_mode "${ipv6_mode}"
   # 启动前清理可能残留的防火墙规则，避免冲突
   cleanup_firewall_and_routes
   if module_disabled; then
@@ -592,6 +698,8 @@ start_run() {
   fi
   set_module_description "RUNNING" "service active"
   notify_user "KSU Proxy started"
+  # 启动定时重启守护进程
+  start_scheduled_restart
 }
 
 case "$1" in
@@ -601,6 +709,7 @@ case "$1" in
   stop)
     # ⬇️ 立即写入 STOPPING，并在整个停止过程中保持此状态
     set_module_description "STOPPING" "stopping service"
+    stop_scheduled_restart
     sync
     if [ -x "${PROXYD}" ]; then
       "${PROXYD}" -config "${CONFIG_FILE}" stop >>"${LOG_DIR}/service.log" 2>&1
