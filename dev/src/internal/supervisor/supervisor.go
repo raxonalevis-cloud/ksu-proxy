@@ -76,6 +76,44 @@ func (s Supervisor) StartXTunnel(ctx context.Context, nodes []config.XTunnelNode
 	return nil
 }
 
+func (s Supervisor) StopXTunnel(ctx context.Context) error {
+	items, err := s.ReadPids()
+	if err != nil {
+		return err
+	}
+	stopped := false
+	for _, item := range items {
+		if !strings.HasPrefix(item.Name, "x-tunnel:") {
+			continue
+		}
+		if item.PID <= 0 {
+			continue
+		}
+		if s.Logger != nil {
+			s.Logger.Printf("stopping %s pid=%d", item.Name, item.PID)
+		}
+		proc, err := os.FindProcess(item.PID)
+		if err != nil {
+			continue
+		}
+		_ = proc.Signal(syscall.SIGTERM)
+		stopped = true
+	}
+	if stopped {
+		time.Sleep(300 * time.Millisecond)
+		for _, item := range items {
+			if !strings.HasPrefix(item.Name, "x-tunnel:") {
+				continue
+			}
+			proc, err := os.FindProcess(item.PID)
+			if err == nil {
+				_ = proc.Kill()
+			}
+		}
+	}
+	return nil
+}
+
 func (s Supervisor) StopAll(ctx context.Context) error {
 	items, err := s.ReadPids()
 	if err != nil {

@@ -601,6 +601,8 @@ scheduled_restart_singbox() {
       echo "$!" >"${RUN_PID}"
       echo "${current_time}" >"${last_restart_file}"
       echo "$(date '+%Y-%m-%d %H:%M:%S') sing-box restarted successfully" >>"${LOG_DIR}/service.log"
+      # 重启时清理日志
+      clean_logs
     fi
   fi
 }
@@ -633,6 +635,24 @@ stop_scheduled_restart() {
       kill "${pid}" >/dev/null 2>&1 || true
     fi
     rm -f "${RUN_DIR}/scheduled-restart.pid"
+  fi
+}
+
+# 日志轮转：清理超过 3 天的日志，单文件最大 2MB
+clean_logs() {
+  local max_size=2048  # KB
+  local keep_days=3
+  if [ -d "${LOG_DIR}" ]; then
+    # 删除超过 3 天的日志
+    find "${LOG_DIR}" -type f \( -name "*.log" -o -name "*.txt" \) ! -name "run.log" -mtime +${keep_days} -delete 2>/dev/null
+    # 截断大文件
+    for f in "${LOG_DIR}"/*.log "${LOG_DIR}"/*.txt; do
+      [ -f "$f" ] || continue
+      local size=$(stat -c%s "$f" 2>/dev/null || echo 0)
+      [ "$size" -lt $((max_size * 1024)) ] && continue
+      # 保留最后 5000 行
+      tail -n 5000 "$f" > "${f}.tmp" 2>/dev/null && cat "${f}.tmp" > "$f" && rm -f "${f}.tmp"
+    done
   fi
 }
 
@@ -734,6 +754,8 @@ case "$1" in
     stop_detail="${KSP_STOP_REASON:-service stopped}"
     set_module_description "STOPPED" "${stop_detail}"
     notify_user "KSU Proxy stopped"
+    # 清理日志
+    clean_logs
     ;;
   restart)
     KSP_SILENT=1 "$0" stop

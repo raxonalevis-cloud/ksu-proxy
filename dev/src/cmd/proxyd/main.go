@@ -121,16 +121,24 @@ func run(ctx context.Context, cfg config.Config, logger *log.Logger) error {
 				}
 			}
 			if cfg.SingBox.RestartOnConfigMod {
-				restart := watch.changed(cfg.SingBox.BaseConfig) || watch.changed(cfg.XTunnel.NodesFile)
-				if !restart {
+				xTunnelChanged := watch.changed(cfg.XTunnel.NodesFile)
+				singBoxChanged := watch.changed(cfg.SingBox.BaseConfig)
+				if !singBoxChanged {
 					for _, p := range loadProviderPaths(cfg) {
 						if watch.changed(p) {
-							restart = true
+							singBoxChanged = true
 							break
 						}
 					}
 				}
-				if restart {
+				if xTunnelChanged && !singBoxChanged {
+					// 只重启 x-tunnel，不重启 sing-box
+					logger.Printf("x-tunnel nodes changed, restarting x-tunnel only")
+					if err := restartXTunnelOnly(ctx, cfg, logger); err != nil {
+						logger.Printf("x-tunnel restart failed: %v", err)
+					}
+				} else if singBoxChanged || xTunnelChanged {
+					// 重启所有核心服务
 					logger.Printf("config/provider changed, restarting cores")
 					_ = stop(ctx, cfg, logger)
 					if err := start(ctx, cfg, logger); err != nil {
@@ -213,6 +221,27 @@ func stop(ctx context.Context, cfg config.Config, logger *log.Logger) error {
 	err := sup.StopAll(stopCtx)
 	_ = sup.StopRunDaemons(stopCtx)
 	return err
+}
+
+func restartXTunnelOnly(ctx context.Context, cfg config.Config, logger *log.Logger) error {
+	sup := supervisor.Supervisor{Config: cfg, Logger: logger}
+	// 停止 x-tunnel
+	_ = sup.StopXTunnel(ctx)
+	// 等待端口释放
+	time.Sleep(2 * time.Second)
+	// 重新加载节点配置
+	nodes, err := config.LoadXTunnelNodes(cfg.XTunnel.NodesFile, cfg.XTunnel)
+	if err != nil {
+		return fmt.Errorf("load x-tunnel nodes: %w", err)
+	}
+	// 重新启动 x-tunnel
+	if err := sup.StartXTunnel(ctx, nodes); err != nil {
+		return fmt.Errorf("start x-tunnel: %w", err)
+	}
+	if logger != nil {
+		logger.Printf("x-tunnel restarted with %d nodes", len(nodes))
+	}
+	return nil
 }
 
 func reconcile(ctx context.Context, cfg config.Config, logger *log.Logger) error {

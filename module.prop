@@ -1,7 +1,7 @@
 id=ksu-proxy
 name=KSU Proxy
-version=v0.2.9-dev
-versionCode=19
+version=v0.2.11-dev
+versionCode=20
 author=Tony, Codex
 description=Whitelist transparent proxy for KernelSU with sing-box and x-tunnel
 webui=webroot/index.html

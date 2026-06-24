@@ -496,7 +496,8 @@ func prepareCommandArgs(name string, args []string) []string {
 	if !isIPTablesCommand(name) || hasIPTablesWait(out) {
 		return out
 	}
-	return append([]string{"-w", "5"}, out...)
+	// Android 上 iptables 锁冲突较常见，使用较长的等待时间
+	return append([]string{"-w", "100"}, out...)
 }
 
 func isIPTablesCommand(name string) bool {
